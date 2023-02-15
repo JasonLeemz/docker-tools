@@ -1,0 +1,26 @@
+[networks]
+name = "macvlan"
+
+[nginx]
+conf = "/home/docker/openresty/nginx/conf.d" # 根据自己的环境修改
+#conf = "/Users/limingze/GolandProjects/docker-tool/config/test" # 根据自己的环境修改
+tpl = "config/nginx.tpl.conf"
+#tpl = "/Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf"
+
+[port]
+alist = "5244"
+bark = "80"
+ddns = "9876"
+emby = "8096"
+gv = "8096"
+jackett = "9117"
+jellyfin = "8096"
+kms = "1688"
+nastools = "3000"
+nas = "5001"
+portainer = "9000"
+qb = "8080"
+transmission = "9091"
+wiz = "80"
+yacd = "80"
+clash = "9090"
