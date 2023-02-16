@@ -9,14 +9,18 @@ func main() {
 	//实例化日志类
 	logger := log.InitLogger()
 
-	err := tools.UpdateProxy()
+	reload, err := tools.UpdateProxy()
 	if err != nil {
 		panic(err)
 	}
+	logger.Infof("nginx reload:%t,err:%v", reload, err)
 
-	err = tools.NginxReload()
-	if err != nil {
-		panic(err)
+	// nginx -s reload
+	if reload {
+		err = tools.NginxReload()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	defer logger.Sync() // 将 buffer 中的日志写到文件中

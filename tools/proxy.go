@@ -1,16 +1,20 @@
 package tools
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/BurntSushi/toml"
 	"github.com/JasonLeemz/docker-tools/core/log"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
 	"text/template"
+	"time"
 )
 
 var config Config
+var db *sql.DB
 
 type Nets []Net
 
@@ -47,8 +51,9 @@ func NginxReload() error {
 	return err
 }
 
-func UpdateProxy() error {
+func UpdateProxy() (bool, error) {
 	logger := log.InitLogger()
+	reload := false
 
 	ips, err := GetIPList()
 	logger.Debug("GetIPList:", ips)
@@ -56,11 +61,22 @@ func UpdateProxy() error {
 	t, err := template.ParseFiles(config.Nginx.Tpl)
 	if err != nil {
 		logger.Warnf("ParseTemplate err:%v", err)
-		return err
+		return reload, err
 	}
 
 	confd := config.Nginx.Conf
+	mip, merr := getServerIPCache()
+
 	for name, ip := range ips {
+		// 判断ip是否变化
+		sip, ok := mip[name]
+		if merr == nil && ok != false && sip == ip {
+			// 没有变化
+			continue
+		}
+
+		logger.Debugf("range ips,name:%s, ip:%s", name, ip)
+
 		//输出文件
 		outFile := confd + "/" + name + ".conf"
 		err = os.RemoveAll(outFile)
@@ -73,9 +89,9 @@ func UpdateProxy() error {
 			panic(err)
 		}
 
-		// 从配置文件中获取版本号
+		// 从配置文件中获取端口号
 		port := ""
-		ok := false
+		ok = false
 		if port, ok = config.Port[name]; !ok {
 			logger.Warnf("%s not found", name)
 			continue
@@ -87,17 +103,37 @@ func UpdateProxy() error {
 		})
 		if err != nil {
 			logger.Warnf("ExecuteTemplate err:%v", err)
-			return err
+			return reload, err
 		}
+
+		// 更新cache
+		reload = true // 只要有ip发生变化，就需要reload
+		stmt, err := db.Prepare("delete from serverip where `name` =?")
+		logger.Infof("db delete err:%v", err)
+		res, err := stmt.Exec(name)
+		logger.Infof("db delete res:%v, err:%v", res, err)
+
+		stmt, err = db.Prepare("INSERT INTO serverip (`name`,`IP`,`utime`) VALUES(?,?,?)")
+		if err != nil {
+			logger.Errorf("db.Prepare err:%v", err)
+		}
+
+		shanghaiZone, _ := time.LoadLocation("Asia/Shanghai")
+		formatTimeStr := time.Now().Format("2006-01-02 15:04:05")
+		formatTime, _ := time.ParseInLocation("2006-01-02 15:04:05", formatTimeStr, shanghaiZone)
+
+		res, err = stmt.Exec(name, ip, formatTime)
+		logger.Infof("db Exec res:%v, err:%v", res, err)
 	}
 
-	return nil
+	defer db.Close()
+	return reload, nil
 }
 func GetIPList() (map[string]string, error) {
 	logger := log.InitLogger()
 
 	cmd := "docker network inspect " + config.Networks.Name
-	logger.Debug("cmd:%s", cmd)
+	logger.Debugf("cmd:%s", cmd)
 
 	o, _ := Command(cmd)
 
@@ -119,11 +155,35 @@ func GetIPList() (map[string]string, error) {
 	return ips, nil
 }
 
+func getServerIPCache() (map[string]string, error) {
+	logger := log.InitLogger()
+
+	//查询数据
+	rows, err := db.Query("SELECT `name`,`IP` FROM serverip")
+	if err != nil {
+		return nil, err
+	}
+	sips := make(map[string]string, 0)
+	for rows.Next() {
+		var name string
+		var ip string
+		err = rows.Scan(&name, &ip)
+		if err != nil {
+			logger.Error(err)
+			return nil, err
+		}
+		sips[name] = ip
+	}
+
+	return sips, nil
+}
+
 func init() {
 	logger := log.InitLogger()
 
 	// config/app.toml
 	path := "config/app.toml"
+	//path := "/Users/limingze/GolandProjects/docker-tool/config/app.toml"
 	if _, err := os.Stat(path); err != nil {
 		logger.Warnf("ParseToml err:%v", err)
 		panic(err)
@@ -137,5 +197,18 @@ func init() {
 		panic(err)
 	}
 
-	logger.Debug(config)
+	// 初始化sqlite
+	//db, err = sql.Open("sqlite3", "/Users/limingze/GolandProjects/docker-tool/cache/cache.db")
+	db, err = sql.Open("sqlite3", "cache/cache.db")
+	//db, err = sql.Open("sqlite3", "cache/cache.db")
+	if err != nil {
+		logger.Errorf("初始化sqlite err:%v", err)
+	}
+
+	sql_table := `CREATE TABLE IF NOT EXISTS serverip(
+id INTEGER PRIMARY KEY AUTOINCREMENT,name VARCHAR(64) NULL,IP VARCHAR(64) NULL,utime datetime NOT NULL DEFAULT CURRENT_TIMESTAMP);`
+
+	res, err := db.Exec(sql_table)
+
+	logger.Debugf("sql_table:%s,CREATE TABLE RESULT:%v,ERR:%v", sql_table, res, err)
 }

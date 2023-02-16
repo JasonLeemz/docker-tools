@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 )

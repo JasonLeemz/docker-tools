@@ -1,20 +1,10 @@
-2023-02-15T19:22:35.696+0800	WARN	tools/proxy.go:42	ParseToml err:stat ./config/app.toml: no such file or directory
-2023-02-15T19:23:14.641+0800	WARN	tools/proxy.go:42	ParseToml err:stat ./config/app.toml: no such file or directory
-2023-02-15T19:23:24.254+0800	WARN	tools/proxy.go:42	ParseToml err:stat ./config/app.toml: no such file or directory
-2023-02-15T19:23:46.436+0800	WARN	tools/proxy.go:42	ParseToml err:stat ./config/app.toml: no such file or directory
-2023-02-15T19:24:19.581+0800	WARN	tools/proxy.go:42	ParseToml err:stat ./config/app.toml: no such file or directory
-2023-02-15T19:24:37.938+0800	WARN	tools/proxy.go:42	ParseToml err:stat ./config/app.toml: no such file or directory
-2023-02-15T19:53:00.486+0800	DEBUG	tools/proxy.go:129	{{/Users/limingze/GolandProjects/docker-tool/config /Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf} map[alist:5244 bark:80 ddns:9876 emby:8096 jackett:9117 jellyfin:8096 kms:1688 nas:5001 nastools:3000 portainer:9000 qb:8080 transmission:9091 wiz:80]}
-2023-02-15T19:53:10.547+0800	DEBUG	tools/proxy.go:49	GetIPList:map[]
-2023-02-15T20:02:05.726+0800	DEBUG	tools/proxy.go:138	{{bridge} {/Users/limingze/GolandProjects/docker-tool/config /Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf} map[alist:5244 bark:80 ddns:9876 emby:8096 jackett:9117 jellyfin:8096 kms:1688 nas:5001 nastools:3000 portainer:9000 qb:8080 transmission:9091 wiz:80]}
-2023-02-15T20:02:08.450+0800	DEBUG	tools/proxy.go:98	cmd:%sdocker network inspect bridge
-2023-02-15T20:02:08.737+0800	INFO	tools/proxy.go:116	map[metube:172.17.0.3 npm:172.17.0.4 portainer:172.17.0.2]
-2023-02-15T20:02:15.407+0800	DEBUG	tools/proxy.go:52	GetIPList:map[metube:172.17.0.3 npm:172.17.0.4 portainer:172.17.0.2]
-2023-02-15T20:03:00.532+0800	WARN	tools/proxy.go:78	npm not found
-2023-02-15T20:03:32.421+0800	WARN	tools/proxy.go:78	metube not found
-2023-02-15T20:04:38.267+0800	DEBUG	tools/proxy.go:138	{{bridge} {/Users/limingze/GolandProjects/docker-tool/config /Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf} map[alist:5244 bark:80 ddns:9876 emby:8096 jackett:9117 jellyfin:8096 kms:1688 nas:5001 nastools:3000 portainer:9000 qb:8080 transmission:9091 wiz:80]}
-2023-02-15T20:04:40.576+0800	DEBUG	tools/proxy.go:98	cmd:%sdocker network inspect bridge
-2023-02-15T20:04:40.684+0800	INFO	tools/proxy.go:116	map[metube:172.17.0.3 npm:172.17.0.4 portainer:172.17.0.2]
-2023-02-15T20:04:40.684+0800	DEBUG	tools/proxy.go:52	GetIPList:map[metube:172.17.0.3 npm:172.17.0.4 portainer:172.17.0.2]
-2023-02-15T20:05:21.977+0800	WARN	tools/proxy.go:78	npm not found
-2023-02-15T20:06:03.260+0800	WARN	tools/proxy.go:78	metube not found
+2023-02-16T14:10:23.089+0800	WARN	tools/proxy.go:173	ParseToml err:stat config/app.toml: no such file or directory
+2023-02-16T14:11:44.053+0800	ERROR	tools/proxy.go:190	DecodeFile err:sql: unknown driver "sqlite3" (forgotten import?)
+2023-02-16T14:13:08.047+0800	DEBUG	tools/proxy.go:193	{{macvlan} {/home/docker/openresty/nginx/conf.d config/nginx.tpl.conf} map[CSF:19035 alist:5244 bark:80 clash:9090 ddns:9876 emby:8096 gv:8096 jackett:9117 jellyfin:8096 kms:1688 nas:5001 nastools:3000 portainer:9000 qb:8080 transmission:9091 wiz:80 yacd:80]}
+2023-02-16T14:13:27.480+0800	DEBUG	tools/proxy.go:123	cmd:%sdocker network inspect macvlan
+2023-02-16T14:13:27.758+0800	DEBUG	tools/proxy.go:58	GetIPList:map[]
+2023-02-16T14:13:27.758+0800	WARN	tools/proxy.go:62	ParseTemplate err:open config/nginx.tpl.conf: no such file or directory
+2023-02-16T14:24:17.206+0800	DEBUG	tools/proxy.go:205	CREATE TABLE RESULT:{0x1400016c000 0x1400001e7a0},ERR:<nil>
+2023-02-16T14:25:42.578+0800	DEBUG	tools/proxy.go:123	cmd:%sdocker network inspect macvlan
+2023-02-16T14:25:42.812+0800	DEBUG	tools/proxy.go:58	GetIPList:map[]
+2023-02-16T14:25:42.812+0800	WARN	tools/proxy.go:62	ParseTemplate err:open config/nginx.tpl.conf: no such file or directory

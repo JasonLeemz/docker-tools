@@ -2,10 +2,10 @@
 name = "macvlan"
 
 [nginx]
-conf = "/home/docker/openresty/nginx/conf.d" # 根据自己的环境修改
-#conf = "/Users/limingze/GolandProjects/docker-tool/config/test" # 根据自己的环境修改
-tpl = "config/nginx.tpl.conf"
-#tpl = "/Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf"
+#conf = "/home/docker/openresty/nginx/conf.d" # 根据自己的环境修改
+conf = "/Users/limingze/GolandProjects/docker-tool/config/test" # 根据自己的环境修改
+#tpl = "config/nginx.tpl.conf"
+tpl = "/Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf"
 
 [port]
 alist = "5244"
@@ -24,3 +24,4 @@ transmission = "9091"
 wiz = "80"
 yacd = "80"
 clash = "9090"
+CSF = "19035"
