@@ -2,26 +2,33 @@
 name = "macvlan"
 
 [nginx]
-#conf = "/home/docker/openresty/nginx/conf.d" # 根据自己的环境修改
-conf = "/Users/limingze/GolandProjects/docker-tool/config/test" # 根据自己的环境修改
-#tpl = "config/nginx.tpl.conf"
-tpl = "/Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf"
+http_conf = "/home/docker/openresty/nginx/conf.d" # 根据自己的环境修改
+stream_conf = "/home/docker/openresty/nginx/tcp.d" # 根据自己的环境修改
+#conf = "/Users/limingze/GolandProjects/docker-tool/config/test" # 根据自己的环境修改
+http_tpl = "config/nginx.http.tpl.conf"
+stream_tpl = "config/nginx.stream.tpl.conf"
+#tpl = "/Users/limingze/GolandProjects/docker-tool/config/nginx.tpl.conf"
 
-[port]
-alist = "5244"
-bark = "80"
+[port_http]
 ddns = "9876"
-emby = "8096"
-gv = "8096"
+mtube = "8096"
 jackett = "9117"
 jellyfin = "8096"
-kms = "1688"
-nastools = "3000"
-nas = "5001"
+nastool = "3000"
 portainer = "9000"
-qb = "8080"
-transmission = "9091"
 wiz = "80"
 yacd = "80"
 clash = "9090"
-CSF = "19035"
+csf = "19035"
+qljd = "5700"
+qlqd = "5700"
+qiandao = "8082"
+adguardhome = "80"
+bark = "8080"
+embystat = "6555"
+openresty = "80"
+hm = "80"
+
+[port_stream]
+clash = ["7890","7891"] # 必须按照此格式配置 ["端口号","端口号"]
+adguardhome = ["53","67","68","443","784","853","8853","5443"]

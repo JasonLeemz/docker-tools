@@ -6,3 +6,4 @@ go.sum
 *_test.go
 log/*.log
 cache.db
+config/app.toml

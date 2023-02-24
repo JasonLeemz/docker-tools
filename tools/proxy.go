@@ -35,10 +35,13 @@ type Config struct {
 		Name string `toml:"name"`
 	} `toml:"networks"`
 	Nginx struct {
-		Conf string `toml:"conf"`
-		Tpl  string `toml:"tpl"`
+		HttpConf   string `toml:"http_conf"`
+		HttpTpl    string `toml:"http_tpl"`
+		StreamConf string `toml:"stream_conf"`
+		StreamTpl  string `toml:"stream_tpl"`
 	} `toml:"nginx"`
-	Port map[string]string `toml:"port"`
+	PortHttp   map[string]string   `toml:"port_http"`
+	PortStream map[string][]string `toml:"port_stream"`
 }
 
 func NginxReload() error {
@@ -58,73 +61,27 @@ func UpdateProxy() (bool, error) {
 	ips, err := GetIPList()
 	logger.Debug("GetIPList:", ips)
 
-	t, err := template.ParseFiles(config.Nginx.Tpl)
+	// 获取http.conf模板
+	httpTpl, err := template.ParseFiles(config.Nginx.HttpTpl)
 	if err != nil {
-		logger.Warnf("ParseTemplate err:%v", err)
+		logger.Warnf("Parse HttpTpl err:%v", err)
 		return reload, err
 	}
 
-	confd := config.Nginx.Conf
-	mip, merr := getServerIPCache()
-
-	for name, ip := range ips {
-		// 判断ip是否变化
-		sip, ok := mip[name]
-		if merr == nil && ok != false && sip == ip {
-			// 没有变化
-			continue
-		}
-
-		logger.Debugf("range ips,name:%s, ip:%s", name, ip)
-
-		//输出文件
-		outFile := confd + "/" + name + ".conf"
-		err = os.RemoveAll(outFile)
-		if err != nil {
-			logger.Warnf("Remove file:%v", err)
-		}
-
-		file, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			panic(err)
-		}
-
-		// 从配置文件中获取端口号
-		port := ""
-		ok = false
-		if port, ok = config.Port[name]; !ok {
-			logger.Warnf("%s not found", name)
-			continue
-		}
-		err = t.Execute(file, map[string]interface{}{
-			"name": name,
-			"ip":   ip,
-			"port": port,
-		})
-		if err != nil {
-			logger.Warnf("ExecuteTemplate err:%v", err)
-			return reload, err
-		}
-
-		// 更新cache
-		reload = true // 只要有ip发生变化，就需要reload
-		stmt, err := db.Prepare("delete from serverip where `name` =?")
-		logger.Infof("db delete err:%v", err)
-		res, err := stmt.Exec(name)
-		logger.Infof("db delete res:%v, err:%v", res, err)
-
-		stmt, err = db.Prepare("INSERT INTO serverip (`name`,`IP`,`utime`) VALUES(?,?,?)")
-		if err != nil {
-			logger.Errorf("db.Prepare err:%v", err)
-		}
-
-		shanghaiZone, _ := time.LoadLocation("Asia/Shanghai")
-		formatTimeStr := time.Now().Format("2006-01-02 15:04:05")
-		formatTime, _ := time.ParseInLocation("2006-01-02 15:04:05", formatTimeStr, shanghaiZone)
-
-		res, err = stmt.Exec(name, ip, formatTime)
-		logger.Infof("db Exec res:%v, err:%v", res, err)
+	// 获取tcp.conf模板
+	streamTpl, err := template.ParseFiles(config.Nginx.StreamTpl)
+	if err != nil {
+		logger.Warnf("Parse TcpTpl err:%v", err)
+		return reload, err
 	}
+
+	// http虚拟主机配置文路径
+	confd := config.Nginx.HttpConf
+	// stream端口转发配置文件路径
+	tcpd := config.Nginx.StreamConf
+
+	// 比对ip，生成配置文件
+	reload, err = generateConfig(ips, httpTpl, streamTpl, confd, tcpd)
 
 	defer db.Close()
 	return reload, nil
@@ -211,4 +168,113 @@ id INTEGER PRIMARY KEY AUTOINCREMENT,name VARCHAR(64) NULL,IP VARCHAR(64) NULL,u
 	res, err := db.Exec(sql_table)
 
 	logger.Debugf("sql_table:%s,CREATE TABLE RESULT:%v,ERR:%v", sql_table, res, err)
+}
+
+func generateConfig(ips map[string]string, httpTpl, streamTpl *template.Template, confd, tcpd string) (bool, error) {
+	logger := log.InitLogger()
+	var err error
+	reload := false
+
+	// 获取当前macvlan的ip地址
+	mip, merr := getServerIPCache()
+
+	for name, ip := range ips {
+		// 判断ip是否变化
+		sip, ok := mip[name]
+		if merr == nil && ok != false && sip == ip {
+			// 没有变化
+			continue
+		}
+
+		logger.Debugf("range ips,name:%s, ip:%s", name, ip)
+
+		// 输出文件
+		// http 配置
+		outFile := confd + "/" + name + ".conf"
+		err = os.RemoveAll(outFile)
+		if err != nil {
+			logger.Warnf("Remove file:%v", err)
+		}
+		// 生成http配置文件
+		httpFile, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			panic(err)
+		}
+
+		// 从配置文件中获取端口号
+		port := ""
+		ok = false
+		if port, ok = config.PortHttp[name]; !ok {
+			logger.Warnf("http %s not found", name)
+			continue
+		}
+
+		// 注入变量，生成完整配置
+		err = httpTpl.Execute(httpFile, map[string]interface{}{
+			"name": name,
+			"ip":   ip,
+			"port": port,
+		})
+		if err != nil {
+			logger.Warnf("Execute Http Template err:%v", err)
+			return reload, err
+		}
+
+		// =========Http End=========
+
+		// tcp 配置
+		outFile = tcpd + "/" + name + ".conf"
+		err = os.RemoveAll(outFile)
+		if err != nil {
+			logger.Warnf("Remove file:%v", err)
+		}
+		// 生成tcp配置文件
+		tcpFile, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			panic(err)
+		}
+
+		// 从配置文件中获取端口号
+		ports := make([]string, 0)
+		ok = false
+		if ports, ok = config.PortStream[name]; !ok {
+			logger.Warnf("tcp %s not found", name)
+			// 以Http配置为主，这里报错后不阻断运行
+		} else {
+			// 注入变量，生成完整配置
+			err = streamTpl.Execute(tcpFile, map[string]interface{}{
+				"ports": ports,
+				"ip":    ip,
+				"name":  name,
+			})
+			if err != nil {
+				logger.Warnf("Execute Tcp Template err:%v", err)
+				// 以Http配置为主，这里报错后不阻断运行
+				//return reload, err
+			}
+		}
+
+		// =========Tcp End=========
+
+		// 更新cache
+		reload = true // 只要有ip发生变化，就需要reload
+		stmt, err := db.Prepare("delete from serverip where `name` =?")
+		logger.Infof("db delete err:%v", err)
+		res, err := stmt.Exec(name)
+		logger.Infof("db delete res:%v, err:%v", res, err)
+
+		stmt, err = db.Prepare("INSERT INTO serverip (`name`,`IP`,`utime`) VALUES(?,?,?)")
+		if err != nil {
+			logger.Errorf("db.Prepare err:%v", err)
+		}
+
+		shanghaiZone, _ := time.LoadLocation("Asia/Shanghai")
+		formatTimeStr := time.Now().Format("2006-01-02 15:04:05")
+		formatTime, _ := time.ParseInLocation("2006-01-02 15:04:05", formatTimeStr, shanghaiZone)
+
+		res, err = stmt.Exec(name, ip, formatTime)
+		logger.Infof("db Exec res:%v, err:%v", res, err)
+	}
+
+	return reload, err
 }
