@@ -206,18 +206,17 @@ func generateConfig(ips map[string]string, httpTpl, streamTpl *template.Template
 		ok = false
 		if port, ok = config.PortHttp[name]; !ok {
 			logger.Warnf("http %s not found", name)
-			continue
-		}
-
-		// 注入变量，生成完整配置
-		err = httpTpl.Execute(httpFile, map[string]interface{}{
-			"name": name,
-			"ip":   ip,
-			"port": port,
-		})
-		if err != nil {
-			logger.Warnf("Execute Http Template err:%v", err)
-			return reload, err
+		} else {
+			// 注入变量，生成完整配置
+			err = httpTpl.Execute(httpFile, map[string]interface{}{
+				"name": name,
+				"ip":   ip,
+				"port": port,
+			})
+			if err != nil {
+				logger.Warnf("Execute Http Template err:%v", err)
+				return reload, err
+			}
 		}
 
 		// =========Http End=========
